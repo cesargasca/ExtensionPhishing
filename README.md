@@ -1,14 +1,8 @@
-# Gmail.js Chrome Extension
+Extensión de Navegador Web para detectar ataques de phishing en correos electrónicos
 
-Hello world chrome extension using gmail.js
+Se hace uso de  Procesamiento del Lenguaje Natural (PLN)
+y técnicas de Machine Learning (ML) para categorizar los correos electrónicos (phishing, spam o ham)
 
-This is a sample chome extension that uses gmail.js to build apps on top of Gmail.
-
-The manifest in this repo bypasses the new Content Security Policy (CSP) enforced by Gmail.
-
-### Please use the latest `gmail.js` file from the original repo linked below
-
-**http://github.com/kartiktalwar/gmail.js**
 
 
 
