@@ -1,18 +1,27 @@
 {
-  "name": "Gmail.js",
-  "version": "0.1",
-  "description": "Hello World Gmail chrome extension",
-  "content_scripts": [
-    {
-      "matches": ["https://mail.google.com/*"],
-      "js": ["content.js"]
-    }
-  ],
-  "web_accessible_resources": [
-    "jquery-1.10.2.min.js",
-    "gmail.js",
-    "spec.js",
-    "main.js"
-  ],
-  "manifest_version": 2
+    "manifest_version": 2,
+    "name": "GmailJS Node Boilerplate Extension",
+    "short_name": "gmailjsnode",
+    "version": "1.0",
+    "author": "Jostein Kjønigsen <jostein@kjonigsen.net>",
+
+    "description": "A minimal extension which demonstrates how to create a extension with Gmail.JS and NodeJS-based bundling.",
+
+    "content_scripts": [
+        {
+            "matches": [ "*://mail.google.com/*" ],
+            "js": [
+                "src/extensionInjector.js"
+            ],
+            "run_at": "document_end"
+        }
+    ],
+
+    "web_accessible_resources": [
+        "dist/extension.js"
+    ],
+
+    "permissions": [
+        "https://*/*"
+    ]
 }
