@@ -4,8 +4,25 @@ console.log("Extension loading...");
 const jQuery = require("jquery");
 const $ = jQuery;
 const GmailFactory = require("gmail-js");
+//const lorca = require('lorca-nlp');
+var natural = require('natural');
 const gmail = new GmailFactory.Gmail($);
 window.gmail = gmail;
+
+function removeTags(str) {
+      if ((str===null) || (str===''))
+      return false;
+      else
+      str = str.toString();
+      return str.replace( /(<([^>]+)>)/ig, '');
+   }
+
+
+
+
+
+
+
 
 gmail.observe.on("load", () => {
     const userEmail = gmail.get.user_email();
@@ -13,15 +30,14 @@ gmail.observe.on("load", () => {
 
     gmail.observe.on("view_email", (domEmail) => {
         console.log("Looking at email:", domEmail);
-        const emailData = gmail.new.get.email_data(domEmail);
-        console.log("Email data:", emailData);
-        console.log("TEST")
-        var email_id = gmail.get.thread_id() 
-    	var email_dom = new gmail.dom.email(email_id); // optionally can pass relevant $('div.adn');
+        var email_id = gmail.get.thread_id() //get email id
+    	var email_dom = new gmail.dom.email(email_id); // get dom
 		var body = email_dom.body();
-		console.log(body)
-	//add a heading at the start of the email and update in the interface
-		
-		
+        var body_without_tags = removeTags(body)
+        //var doc = lorca(body_without_tags);
+        var tokenizer = new natural.WordTokenizer();
+    console.log(tokenizer.tokenize(body_without_tags));
+
     });
 });
+
