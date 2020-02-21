@@ -1,11 +1,11 @@
 {
     "manifest_version": 2,
-    "name": "GmailJS Node Boilerplate Extension",
-    "short_name": "gmailjsnode",
+    "name": "Detección de phishing",
+    "short_name": "phishingmail",
     "version": "1.0",
-    "author": "Jostein Kjønigsen <jostein@kjonigsen.net>",
+    "author": "TT 2019-A013 <cesargasca2597@gmail.com>",
 
-    "description": "A minimal extension which demonstrates how to create a extension with Gmail.JS and NodeJS-based bundling.",
+    "description": "Extension que detecta correos electrónicos en español con intensiones de phishing.",
 
     "content_scripts": [
         {
@@ -18,10 +18,13 @@
     ],
 
     "web_accessible_resources": [
-        "dist/extension.js"
+        "dist/extension.js",
+        "stopwords-es.txt",
+        "modelo_entrenado_json.json"
     ],
 
     "permissions": [
-        "https://*/*"
+        "https://*/*",
+        "file:///*/"
     ]
 }

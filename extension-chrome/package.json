@@ -1,5 +1,5 @@
 {
-  "name": "gmailjs-node-boilerplate",
+  "name": "extension-phishing",
   "version": "1.0.0",
   "description": "",
   "main": "",
@@ -9,13 +9,15 @@
     "bundle": "browserify -o dist/extension.js src/extension.js",
     "build": "npm run stage && npm run bundle"
   },
-  "author": "Jostein kjønigsen",
+  "author": "Cesar Gasca",
   "license": "ISC",
   "dependencies": {
+    "fs": "0.0.1-security",
     "gmail-js": "^0.9.1",
     "jquery": "^3.3.1",
     "lorca-nlp": "^1.0.12",
-    "natural": "^0.6.3"
+    "read-file": "^0.2.0",
+    "stopword": "^0.3.4"
   },
   "devDependencies": {
     "browserify": "16.5.0"

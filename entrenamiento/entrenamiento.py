@@ -7,6 +7,7 @@ Created on Tue Jan 28 13:57:34 2020
 
 import numpy as np
 import pandas as pd
+import json
 from sklearn.feature_extraction.text import CountVectorizer 
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
@@ -27,10 +28,7 @@ class Modelo_entrenado:
     self.prior_phishing = prior_phishing
     self.prior_ham = prior_ham
     
-p1 = Person("John", 36)
 
-print(p1.name)
-print(p1.age)
     
 def getTokens(corpus):
     '''Recibe lista de texto y devuelve texto tokenizado sin digitos ni puntuacion y sin stopwords'''
@@ -131,20 +129,10 @@ def getKeyByValue(term_bow,value):
      
 
 def normalization(corpus):
-	corpus_tokenized = getTokens(corpus) #corpus tokenizado, sin stopwords
-	#lematizacion
-	return corpus_tokenized
+    corpus_tokenized = getTokens(corpus) #corpus tokenizado, sin stopwords
+    #lematizacion
+    return corpus_tokenized
 
-
-
-
-
-
-
-
-
-
-    
     
 if __name__ == '__main__':
     corpus = ["Ha ganado 500,000 dólares de la Lotería Nacional del Reino Unido, responda para reclamar su precio.",
@@ -152,14 +140,23 @@ if __name__ == '__main__':
           "Buenas tardes, miércoles 18:00 me queda bien, ¿cuando empezamos?",
           "Saludos, por medio del presente correo les estoy adjuntando el formato de la primera práctica. Hasta pronto."]
     etiquetas=["phishing","phishing","ham","ham"]
-    corpus_normalized = normalization(corpus)
+    
+    #corpus y etiquetas deben leerse de un archivo .csv
+    
+    
+    corpus_normalized = normalization(corpus) #normalizacion de correos (tokenizacion, eliminacion de stopwords, [lemmatizacion,stemming,tfidf])
     term_document_matrix,term_bow = get_bagOfWords(corpus_normalized) #bag of words y diccionario de terminos
     X =  term_document_matrix
     y = etiquetas
     p_phishing,p_ham,prior_phishing,prior_ham = train(X,y,4,2,2,term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
     
+    modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham)
+    modelo_entrenado_json = json.dumps(modelo_entrenado.__dict__)
+    file_json=open("modelo_entranado_json.json",'w')
+    file_json.write(modelo_entrenado_json)
+    file_json.close()
     
-	#*********************************test*****************************************
+    #*********************************test*****************************************
     prueba = ["Saludos, nos vemos el miércoles para desbloquear su correo"]
     prueba_tokens = getTokens(prueba)
     print(test(prueba_tokens[0],p_phishing,p_ham,prior_phishing,prior_ham)) #imprime phishing o ham
