@@ -15,9 +15,8 @@
     "fs": "0.0.1-security",
     "gmail-js": "^0.9.1",
     "jquery": "^3.3.1",
-    "lorca-nlp": "^1.0.12",
-    "read-file": "^0.2.0",
-    "stopword": "^0.3.4"
+    "languagedetect": "^2.0.0",
+    "lorca-nlp": "^1.0.12"
   },
   "devDependencies": {
     "browserify": "16.5.0"

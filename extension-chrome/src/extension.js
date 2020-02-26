@@ -5,10 +5,12 @@ const jQuery = require("jquery");
 const $ = jQuery;
 const GmailFactory = require("gmail-js");
 const lorca = require('lorca-nlp');
+const LanguageDetect = require('languagedetect');
 const gmail = new GmailFactory.Gmail($);
 var sw = [];
 var modelo_entrenado = "";
 window.gmail = gmail;
+const lngDetector = new LanguageDetect();
 
 function removeTags(str) {
       if ((str===null) || (str===''))
@@ -49,7 +51,7 @@ document.addEventListener('getModelo_url', function (e)
     if(xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200)
     {
         var modelo_json = xhr.responseText;
-        console.log(modelo_json);
+        //console.log(modelo_json);
         modelo_entrenado = JSON.parse(modelo_json)
     }
 };
@@ -89,7 +91,7 @@ function cleanTokens(tokens){
   var format = /[ !@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
   for(var i = 0 ; i < tokens.length ; i++){
     if(tokens[i].length <= 2 || format.test(tokens[i])){
-      console.log(tokens[i]);
+      //console.log(tokens[i]);
     }
     else{
       cleaned.push(tokens[i]);
@@ -104,8 +106,8 @@ function cleanTokens(tokens){
 function test(tokens){
   var p_p = modelo_entrenado.prior_phishing;
   var p_h = modelo_entrenado.prior_ham;
-  console.log(p_p);
-  console.log(p_h);
+  //console.log(p_p);
+  //console.log(p_h);
 
   var conditional_probability_phishing = 1;
     var conditional_probability_ham = 1;
@@ -146,24 +148,26 @@ gmail.observe.on("load", () => {
     var body = email_dom.body();
         var body_without_tags = removeTags(body)//elimina etiquetas html
         var doc = lorca(body_without_tags);
-
-        var tokens = doc.uniqueWords().get(); //obtiene tokens unicos
-        var tokens_sin_stopwords =  removeStopWords(tokens); //quita stopwords
-        var cleaned_tokens = cleanTokens(tokens_sin_stopwords); //elimina tokens con caracteres especiales y con tamaño menor de 2
-
-        //lemmatizar, stemming, considerar tfidf
-        //probar modelo de clasificacion
-
-        //mostrar al usuario
-        
-        console.log(tokens) 
-        console.log(tokens_sin_stopwords);
-        console.log(cleaned_tokens);
-
-        //console.log(modelo_entrenado.prior_phishing);
-        if(test(cleaned_tokens)=="phishing")
-          email_dom.body('<h1 style=\"color:red\">PHISHING!!!!!!!!!!!!!!!!!!</h1>' + body);
+        var languajes = lngDetector.detect(body_without_tags,2);
+  
+        if(languajes[0][0] == "spanish" || languajes[0][1] == "spanish"){
+            //var tokens = doc.uniqueWords().get(); //obtiene tokens unicos
+            var tokens_stemmed = doc.words().stem().get() //obtiene tokens ya con stemming
+            var tokens_sin_stopwords =  removeStopWords(tokens_stemmed); //quita stopwords
+            var cleaned_tokens = cleanTokens(tokens_sin_stopwords); //elimina tokens con caracteres especiales y con tamaño menor de 2
+            //console.log(tokens); //imprime tokens
+            console.log(tokens_stemmed);
+            console.log(tokens_sin_stopwords);
+            console.log(cleaned_tokens);
+            var set = new Set(cleaned_tokens);
+            console.log(Array.from(set));
+            if(test(Array.from(set))=="phishing")
+                email_dom.body('<h1 style=\"color:red\">PHISHING!!!!!!!!!!!!!!!!!!</h1>' + body);
+            else
+                email_dom.body('<h1 style=\"color:green\">NO PASA NADA</h1>' + body);
+        }
         else
-          email_dom.body('<h1 style=\"color:green\">NO PASA NADA</h1>' + body);
+             email_dom.body('<h1 style=\"color:blue\">Puede que este correo no este en español</h1>' + body);
+
     });
 });

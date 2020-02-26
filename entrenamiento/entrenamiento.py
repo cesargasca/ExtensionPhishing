@@ -11,6 +11,7 @@ import json
 from sklearn.feature_extraction.text import CountVectorizer 
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
+from nltk.stem import SnowballStemmer
 
 #leer documentos
 #tokenizar
@@ -129,9 +130,12 @@ def getKeyByValue(term_bow,value):
      
 
 def normalization(corpus):
-    corpus_tokenized = getTokens(corpus) #corpus tokenizado, sin stopwords
-    #lematizacion
-    return corpus_tokenized
+    stemmer = SnowballStemmer('spanish')
+    corpus_tokenized = getTokens(corpus)
+    stemmed_text = []
+    for c in corpus_tokenized:
+        stemmed_text.append([stemmer.stem(i) for i in c])
+    return stemmed_text
 
     
 if __name__ == '__main__':
@@ -152,13 +156,13 @@ if __name__ == '__main__':
     
     modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham)
     modelo_entrenado_json = json.dumps(modelo_entrenado.__dict__)
-    file_json=open("modelo_entranado_json.json",'w')
+    file_json=open("modelo_entrenado_json.json",'w')
     file_json.write(modelo_entrenado_json)
     file_json.close()
     
     #*********************************test*****************************************
     prueba = ["Saludos, nos vemos el miércoles para desbloquear su correo"]
-    prueba_tokens = getTokens(prueba)
+    prueba_tokens = normalization(prueba)
     print(test(prueba_tokens[0],p_phishing,p_ham,prior_phishing,prior_ham)) #imprime phishing o ham
    
 

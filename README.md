@@ -1,7 +1,28 @@
-Extensión de Navegador Web para detectar ataques de phishing en correos electrónicos
+# Detección de correos de phishing
 
-Se hace uso de  Procesamiento del Lenguaje Natural (PLN)
-y técnicas de Machine Learning (ML) para categorizar los correos electrónicos (phishing, spam o ham)
+## Para agregar a tu navegador chrome
+      * Primero descarga los archivos
+      * En las extensiones de chrome habilita el modo desarrollador
+      * Agrega la carpeta "extension-chrome"
+      * Entra a mail.google.com y abre un correo
+      
+En el cuerpo del correo debe mostrarse una leyenda: PHISHING en rojo o NO PASA NADA en verde, entonces está funcionando.
+
+## Para hacer modificaciones al código
+    * Descarga el repositorio
+    * En la carpeta de entrenamiento esta entrenamiento.py y los archivos necesarios para funcionar
+        * Para ejecutar: python3 entrenamiento.py
+    * Para modificar la extensión, pudes hacerlo desde src/extension.js y seguir las siguientes instrucciones:
+    
+````
+cd extension-chrome
+npm install
+npm update
+npm run build
+````
+
+Suerte!
+
 
 
 
