@@ -2,11 +2,12 @@
 # Detección de correos de phishing
 
 ## Para agregar a tu navegador chrome
-Primero descarga los archivos
-    * En las extensiones de chrome habilita el modo desarrollador
-    * Agrega la carpeta "extension-chrome"
-    * Entra a mail.google.com y abre un correo
-En el cuerpo del correo debe mostrarse una leyenda: PHISHING en rojo o NO PASA NADA en verde
+      * Primero descarga los archivos
+      * En las extensiones de chrome habilita el modo desarrollador
+      * Agrega la carpeta "extension-chrome"
+      * Entra a mail.google.com y abre un correo
+      
+En el cuerpo del correo debe mostrarse una leyenda: PHISHING en rojo o NO PASA NADA en verde, entonces está funcionando.
 
 ## Para hacer modificaciones al código
     * Descarga el repositorio
