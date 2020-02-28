@@ -77,10 +77,17 @@ def fillWithZero(term_bow):
         p_ham[getKeyByValue(term_bow,i)] = 0
     return p_phishing,p_ham
 
-def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow):
+def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow,smoothing=True):
     '''Calcula las probabilidades y regresa diccionario de probabilidades condicionales y los prior probabilities'''
-    prior_phishing = totalOfPhishing/totalOfEmails
-    prior_ham = totalOfHam/totalOfEmails
+    A_p = 0
+    A_h = 0
+    lambdaSmoothing = 0
+    
+    if smoothing:
+        A_p,A_h = smoothing_(X_train,y_train,len(term_bow))
+        lambdaSmoothing = 1    
+    prior_phishing = (totalOfPhishing + lambdaSmoothing)/(totalOfEmails + (len(set(y))*lambdaSmoothing))
+    prior_ham = (totalOfHam + lambdaSmoothing) / (totalOfEmails + (len(set(y))*lambdaSmoothing))
     p_phishing,p_ham = fillWithZero(term_bow)
     for i in range(totalOfEmails):
         for j in range(len(term_bow)):
@@ -91,11 +98,31 @@ def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow):
                 p_ham[getKeyByValue(term_bow,j)] += value
                 
     for key,value in term_bow.items():
-        p_phishing[key] /= totalOfPhishing
-        p_ham[key] /= totalOfHam
+        p_phishing[key] = (p_phishing[key] + lambdaSmoothing) / (totalOfPhishing + A_p*lambdaSmoothing)
+        p_ham[key] = (p_ham[key] + lambdaSmoothing) / (totalOfHam + A_h*lambdaSmoothing)
+        
 
     return p_phishing,p_ham,prior_phishing,prior_ham
 
+
+            
+def smoothing_(X,y,total_of_terms):
+    k_p = 0
+    k_h = 0
+    for i in range(len(X)):
+        if y[i] == "phishing":
+            for j in range(total_of_terms):
+                if X.item(i,j)>0:
+                    k_p += 1
+        else:
+            for j in range(total_of_terms):
+                if X.item(i,j)>0:
+                    k_h += 1
+            
+            
+    return k_p,k_h
+                
+    
 def test(email_tokenized,p_phishing,p_ham,prior_phishing,prior_ham):
     '''Hace prueba de un email diferente al del corpus'''
     conditional_probability_phishing = 1
@@ -167,7 +194,7 @@ if __name__ == '__main__':
    
 
 
-
+    
 
 #
 #print(term_document_matrix.item(1,11))
