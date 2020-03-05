@@ -12,6 +12,67 @@ var modelo_entrenado = "";
 window.gmail = gmail;
 const lngDetector = new LanguageDetect();
 
+
+
+const danger = "<div class='row' id='alert-id'>\
+                <div class='col s6 m6'>\
+                    <div id='card-alert' class='card red'>\
+                      <div class='card-content white-text'>\
+                          <span class='card-title white-text darken-1'>\
+                            <i class='material-icons left'>warning</i>\
+                            PHISHING\
+                          </span>\
+                        <p>\
+                        Este correo electrónico parece tener intensiones de phishing\
+                        </p>\
+                      </div>\
+                      <div class='card-action red darken-2'>\
+                        <a id='close_row' class='btn-small waves-effect light-blue white-text'><i class='material-icons left'>check</i> Parece seguro</a>\
+                        <a class='btn-small waves-effect red accent-2 white-text'><i class='material-icons left'>close</i> Mover a etiqueta phishing</a>\
+                      </div>\
+                    </div>\
+                </div>\
+                </div>";
+               
+const relax = "<div class='row' id='alert-id'>\
+                <div class='col s6 m6'>\
+                <div id='card-alert' class='card green'>\
+                      <div class='card-content white-text'>\
+                        <span class='card-title white-text darken-1'>\
+                            <i class='material-icons left'>wb_sunny</i>\
+                            NO PHISHING\
+                          </span>\
+                        <p>\
+                        Este correo electrónico parece NO tener intensiones de phishing\
+                        </p>\
+                      </div>\
+                      <div class='card-action green darken-2'>\
+                        <a id='close_row' class='btn-small waves-effect light-blue white-text'><i class='material-icons left'>check</i> Ok</a>\
+                        <a class='btn-flat waves-effect red accent-2 white-text'><i class='material-icons left'>close</i> Mover a etiqueta phishing</a>\
+                      </div>\
+                    </div>\
+                </div>\
+                </div>";
+
+const noSpanish = "<div class='row' id='alert-id'>\
+                <div class='col s6 m6'>\
+                <div id='card-alert' class='card blue'>\
+                      <div class='card-content white-text'>\
+                        <span class='card-title white-text darken-1'>\
+                            <i class='material-icons left'>language</i>\
+                            Parece que este correo no está en español\
+                      </div>\
+                      <div class='card-action blue darken-2'>\
+                        <a id='close_row' class='btn-small waves-effect light-green white-text'><i class='material-icons left'>check</i> Ok</a>\
+                      </div>\
+                    </div>\
+                </div>\
+                </div>";
+
+
+
+
+
 function removeTags(str) {
       if ((str===null) || (str===''))
       return false;
@@ -148,6 +209,7 @@ gmail.observe.on("load", () => {
     var body = email_dom.body();
         var body_without_tags = removeTags(body)//elimina etiquetas html
         var doc = lorca(body_without_tags);
+        console.log(doc)
         var languajes = lngDetector.detect(body_without_tags,2);
   
         if(languajes[0][0] == "spanish" || languajes[0][1] == "spanish"){
@@ -161,13 +223,28 @@ gmail.observe.on("load", () => {
             console.log(cleaned_tokens);
             var set = new Set(cleaned_tokens);
             console.log(Array.from(set));
-            if(test(Array.from(set))=="phishing")
-                email_dom.body('<h1 style=\"color:red\">PHISHING!!!!!!!!!!!!!!!!!!</h1>' + body);
-            else
-                email_dom.body('<h1 style=\"color:green\">NO PASA NADA</h1>' + body);
+            if(test(Array.from(set))=="phishing"){
+
+                email_dom.body(danger + body);
+                document.getElementById("close_row").addEventListener("click", function cierra() {
+                    document.getElementById("alert-id").style.display = "none";
+                });
+            }
+            else{
+                email_dom.body( relax + body);
+                 document.getElementById("close_row").addEventListener("click", function cierra() {
+                    document.getElementById("alert-id").style.display = "none";
+                });
+            }
         }
-        else
-             email_dom.body('<h1 style=\"color:blue\">Puede que este correo no este en español</h1>' + body);
+        else{
+            email_dom.body(noSpanish + body);
+            document.getElementById("close_row").addEventListener("click", function cierra() {
+                    document.getElementById("alert-id").style.display = "none";
+                });
+
+        }
+             
 
     });
 });

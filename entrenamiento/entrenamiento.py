@@ -12,6 +12,9 @@ from sklearn.feature_extraction.text import CountVectorizer
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import SnowballStemmer
+from read import readXLSX
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 #leer documentos
 #tokenizar
@@ -146,6 +149,30 @@ def test(email_tokenized,p_phishing,p_ham,prior_phishing,prior_ham):
     else:
         return "ham"
     
+def testSplit(X_test,term_bow):
+    y_pred = []
+    for i in range(len(X_test)):
+        conditional_probability_phishing = 1
+        conditional_probability_ham = 1
+        for j in range(len(term_bow)):
+            palabra = getKeyByValue(term_bow,j)
+            #print(palabra)
+            try:
+                if p_phishing[palabra] != 0:
+                    conditional_probability_phishing *= pow(p_phishing[palabra],X_test.item(i,j))
+                if p_ham[palabra] != 0:
+                    conditional_probability_ham *= pow(p_ham[palabra],X_test.item(i,j))
+            except KeyError:
+                print(palabra)
+        result_phishing = prior_phishing*conditional_probability_phishing
+        result_ham = prior_ham*conditional_probability_ham
+        if result_phishing > result_ham:
+            y_pred.append("phishing")
+        else:
+            y_pred.append("ham")
+    return y_pred
+            
+    
 
 def getKeyByValue(term_bow,value):
     '''Regresa la llave que le corresponde a un valor en un diccionario'''
@@ -164,7 +191,15 @@ def normalization(corpus):
         stemmed_text.append([stemmer.stem(i) for i in c])
     return stemmed_text
 
-    
+def getAccuracy(matrix_confusion):
+    tp = matrix_confusion[0][0]
+    fp = matrix_confusion[0][1]
+    fn = matrix_confusion[1][0]
+    tn = matrix_confusion[1][1]
+    print(tp,fp,fn,tn)
+    return (tp +tn) / (tp+fn+tn+fp)
+
+
 if __name__ == '__main__':
     corpus = ["Ha ganado 500,000 dólares de la Lotería Nacional del Reino Unido, responda para reclamar su precio.",
           "Tu Apple ID ha sido bloqueada por razones de seguridad, para desbloquear debes verificar tu identidad.",
@@ -172,14 +207,20 @@ if __name__ == '__main__':
           "Saludos, por medio del presente correo les estoy adjuntando el formato de la primera práctica. Hasta pronto."]
     etiquetas=["phishing","phishing","ham","ham"]
     
-    #corpus y etiquetas deben leerse de un archivo .csv
+    #corpus y etiquetas deben leerse de un archivo .csv -> verificar porque solo puedo leer de xlsx
     
+    X_raw,y_raw = readXLSX('corpus.xlsx')    
     
-    corpus_normalized = normalization(corpus) #normalizacion de correos (tokenizacion, eliminacion de stopwords, [lemmatizacion,stemming,tfidf])
+    corpus_normalized = normalization(X_raw) #normalizacion de correos (tokenizacion, eliminacion de stopwords, [lemmatizacion,stemming,tfidf])
     term_document_matrix,term_bow = get_bagOfWords(corpus_normalized) #bag of words y diccionario de terminos
+    
     X =  term_document_matrix
-    y = etiquetas
-    p_phishing,p_ham,prior_phishing,prior_ham = train(X,y,4,2,2,term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
+    y = y_raw
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y) #divide en conjunto de entrenamiento y de prueba
+    
+    
+    p_phishing,p_ham,prior_phishing,prior_ham = train(X_train,y_train,len(y_train),y_train.count("phishing"),y_train.count("ham"),term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
     
     modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham)
     modelo_entrenado_json = json.dumps(modelo_entrenado.__dict__)
@@ -188,12 +229,16 @@ if __name__ == '__main__':
     file_json.close()
     
     #*********************************test*****************************************
+    #clasificar y_test
+    #crear matriz de confusion
     prueba = ["Saludos, nos vemos el miércoles para desbloquear su correo"]
     prueba_tokens = normalization(prueba)
     print(test(prueba_tokens[0],p_phishing,p_ham,prior_phishing,prior_ham)) #imprime phishing o ham
-   
+    
+    y_pred = testSplit(X_test,term_bow)
+    matrix_confusion = confusion_matrix(y_test, y_pred,labels=["ham", "phishing",])
 
-
+    accuracy = getAccuracy(matrix_confusion)
     
 
 #
