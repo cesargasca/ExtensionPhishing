@@ -28,7 +28,6 @@ const danger = "<div class='row' id='alert-id'>\
                       </div>\
                       <div class='card-action red darken-2'>\
                         <a id='close_row' class='btn-small waves-effect light-blue white-text'><i class='material-icons left'>check</i> Parece seguro</a>\
-                        <a class='btn-small waves-effect red accent-2 white-text'><i class='material-icons left'>close</i> Mover a etiqueta phishing</a>\
                       </div>\
                     </div>\
                 </div>\
@@ -48,7 +47,7 @@ const relax = "<div class='row' id='alert-id'>\
                       </div>\
                       <div class='card-action green darken-2'>\
                         <a id='close_row' class='btn-small waves-effect light-blue white-text'><i class='material-icons left'>check</i> Ok</a>\
-                        <a class='btn-flat waves-effect red accent-2 white-text'><i class='material-icons left'>close</i> Mover a etiqueta phishing</a>\
+                        \
                       </div>\
                     </div>\
                 </div>\
@@ -180,16 +179,27 @@ function test(tokens){
       console.log("phishing",tokens[i],probability);
       conditional_probability_phishing *= probability;
     }
+        else{
+            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfPhishing + modelo_entrenado.a_p*modelo_entrenado.lambdaSmoothing);
+            console.log("NO ESTA EN PHISHING",tokens[i],x);
+            conditional_probability_phishing *= x;
+        }
     if(probability_h != null && parseFloat(probability_h) > 0){
       conditional_probability_ham *= probability_h;
       console.log("ham",tokens[i],probability_h)
     }
+        else{
+            
+            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfHam + modelo_entrenado.a_h*modelo_entrenado.lambdaSmoothing);
+            console.log("NO ESTA EN HAM",tokens[i],x);
+            conditional_probability_ham*= x;
+        }
   }
   
     var result_phishing = p_p*conditional_probability_phishing
     var result_ham = p_h*conditional_probability_ham
-    console.log(result_phishing)
-    console.log(result_ham)
+    console.log("R phishing ",result_phishing)
+    console.log("R ham ", result_ham)
 
     if(result_phishing > result_ham)
         return "phishing";
@@ -248,5 +258,3 @@ gmail.observe.on("load", () => {
 
     });
 });
-
-// comentare algo

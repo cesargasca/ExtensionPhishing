@@ -5,6 +5,7 @@ algunas
 algunos
 ante
 antes
+com
 como
 con
 contra
@@ -154,6 +155,7 @@ hubisteis
 hubiéramos
 hubiésemos
 hubo
+http
 la
 las
 le
@@ -301,6 +303,7 @@ vuestra
 vuestras
 vuestro
 vuestros
+www
 y
 ya
 yo

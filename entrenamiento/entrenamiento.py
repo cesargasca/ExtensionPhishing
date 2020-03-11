@@ -15,6 +15,7 @@ from nltk.stem import SnowballStemmer
 from read import readXLSX
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 #leer documentos
 #tokenizar
@@ -26,14 +27,31 @@ from sklearn.metrics import confusion_matrix
 #entrenar modelo
 #guardar en json
 class Modelo_entrenado:
-  def __init__(self, p_phishing, p_ham,prior_phishing,prior_ham):
+  def __init__(self, p_phishing, p_ham,prior_phishing,prior_ham,totalOfPhishing,totalOfHam,a_p,a_h,lambdaSmoothing):
     self.p_phishing = p_phishing
     self.p_ham = p_ham
     self.prior_phishing = prior_phishing
     self.prior_ham = prior_ham
+    self.totalOfPhishing = totalOfPhishing
+    self.totalOfHam = totalOfHam
+    self.a_p = a_p
+    self.a_h = a_h
+    self.lambdaSmoothing = lambdaSmoothing
     
+class Smoothing:
+    def __init__(self,a_p,a_h,lambdaSmoothing,totalOfPhishing,totalOfHam):
+        self.a_p = a_p
+        self.a_h = a_h
+        self.lambdaSmoothing = lambdaSmoothing
+        self.totalOfPhishing = totalOfPhishing
+        self.totalOfHam = totalOfHam
+
+
 
     
+        
+
+  
 def getTokens(corpus):
     '''Recibe lista de texto y devuelve texto tokenizado sin digitos ni puntuacion y sin stopwords'''
     tokenizer = RegexpTokenizer(r'\w+')
@@ -65,10 +83,30 @@ def get_bagOfWords(corpus_tokenized):
     for c in corpus_tokenized:
         '''Cada email divido en tokens lo concatena de nuevo'''
         corpus_tokenized_text.append(' '.join(c))
-    vectorizer = CountVectorizer(max_features=500)
+    vectorizer = CountVectorizer(max_features=500,min_df=5)
     term_document_matrix = vectorizer.fit_transform(corpus_tokenized_text).todense()
     dic = vectorizer.vocabulary_
-    return term_document_matrix,dic
+    sum_words = term_document_matrix.sum(axis=0)
+    words_freq = [(word, sum_words[0, idx]) for word, idx in dic.items()]
+    words_freq =sorted(words_freq, key = lambda x: x[1], reverse=True)
+    '''ver como obtener BoW con las palabras mas frecuentes como features'''
+
+    return term_document_matrix,dic,words_freq
+
+def get_bagOfWordsTFIDF(corpus_tokenized):
+    '''Recibe emails dividido en tokens y devuelve modelo BOW'''
+    corpus_tokenized_text = []
+    for c in corpus_tokenized:
+        '''Cada email divido en tokens lo concatena de nuevo'''
+        corpus_tokenized_text.append(' '.join(c))
+    vectorizer = TfidfVectorizer(max_features=500)
+    vectors = vectorizer.fit_transform(corpus_tokenized_text)
+    feature_names = vectorizer.get_feature_names()
+    dense = vectors.todense()
+    denselist = dense.tolist()
+    df = pd.DataFrame(denselist, columns=feature_names)
+    dic = vectorizer.vocabulary_
+    return vectors.toarray(),dic,df
 
 
 def fillWithZero(term_bow):
@@ -88,7 +126,8 @@ def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow,smoo
     
     if smoothing:
         A_p,A_h = smoothing_(X_train,y_train,len(term_bow))
-        lambdaSmoothing = 1    
+        lambdaSmoothing = 1  
+        sm = Smoothing(A_p,A_h,lambdaSmoothing,totalOfPhishing,totalOfHam)
     prior_phishing = (totalOfPhishing + lambdaSmoothing)/(totalOfEmails + (len(set(y))*lambdaSmoothing))
     prior_ham = (totalOfHam + lambdaSmoothing) / (totalOfEmails + (len(set(y))*lambdaSmoothing))
     p_phishing,p_ham = fillWithZero(term_bow)
@@ -105,7 +144,7 @@ def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow,smoo
         p_ham[key] = (p_ham[key] + lambdaSmoothing) / (totalOfHam + A_h*lambdaSmoothing)
         
 
-    return p_phishing,p_ham,prior_phishing,prior_ham
+    return p_phishing,p_ham,prior_phishing,prior_ham,sm
 
 
             
@@ -149,7 +188,7 @@ def test(email_tokenized,p_phishing,p_ham,prior_phishing,prior_ham):
     else:
         return "ham"
     
-def testSplit(X_test,term_bow):
+def testSplit(X_test,term_bow,sm):
     y_pred = []
     for i in range(len(X_test)):
         conditional_probability_phishing = 1
@@ -160,8 +199,12 @@ def testSplit(X_test,term_bow):
             try:
                 if p_phishing[palabra] != 0:
                     conditional_probability_phishing *= pow(p_phishing[palabra],X_test.item(i,j))
+                else:
+                    conditional_probability_phishing *= sm.lambdaSmoothing / (sm.totalOfPhishing  + sm.a_p*sm.lambdaSmoothing)
                 if p_ham[palabra] != 0:
                     conditional_probability_ham *= pow(p_ham[palabra],X_test.item(i,j))
+                else:
+                    conditional_probability_phishing *= sm.lambdaSmoothing / (sm.totalOfHam  + sm.a_h*sm.lambdaSmoothing)
             except KeyError:
                 print(palabra)
         result_phishing = prior_phishing*conditional_probability_phishing
@@ -201,28 +244,20 @@ def getAccuracy(matrix_confusion):
 
 
 if __name__ == '__main__':
-    corpus = ["Ha ganado 500,000 dólares de la Lotería Nacional del Reino Unido, responda para reclamar su precio.",
-          "Tu Apple ID ha sido bloqueada por razones de seguridad, para desbloquear debes verificar tu identidad.",
-          "Buenas tardes, miércoles 18:00 me queda bien, ¿cuando empezamos?",
-          "Saludos, por medio del presente correo les estoy adjuntando el formato de la primera práctica. Hasta pronto."]
-    etiquetas=["phishing","phishing","ham","ham"]
-    
     #corpus y etiquetas deben leerse de un archivo .csv -> verificar porque solo puedo leer de xlsx
     
     X_raw,y_raw = readXLSX('corpus.xlsx')    
-    
     corpus_normalized = normalization(X_raw) #normalizacion de correos (tokenizacion, eliminacion de stopwords, [lemmatizacion,stemming,tfidf])
-    term_document_matrix,term_bow = get_bagOfWords(corpus_normalized) #bag of words y diccionario de terminos
-    
+    term_document_matrix,term_bow,words_freq = get_bagOfWords(corpus_normalized) #bag of words y diccionario de terminos
+    #term_document_matrix,term_bow,words_freq = get_bagOfWordsTFIDF(corpus_normalized)
     X =  term_document_matrix
     y = y_raw
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y) #divide en conjunto de entrenamiento y de prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.25) #divide en conjunto de entrenamiento y de prueba
     
+    p_phishing,p_ham,prior_phishing,prior_ham,sm = train(X_train,y_train,len(y_train),y_train.count("phishing"),y_train.count("ham"),term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
     
-    p_phishing,p_ham,prior_phishing,prior_ham = train(X_train,y_train,len(y_train),y_train.count("phishing"),y_train.count("ham"),term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
-    
-    modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham)
+    modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham,y_train.count("phishing"),y_train.count("ham"),sm.a_p,sm.a_h,sm.lambdaSmoothing)
     modelo_entrenado_json = json.dumps(modelo_entrenado.__dict__)
     file_json=open("modelo_entrenado_json.json",'w')
     file_json.write(modelo_entrenado_json)
@@ -231,11 +266,9 @@ if __name__ == '__main__':
     #*********************************test*****************************************
     #clasificar y_test
     #crear matriz de confusion
-    prueba = ["Saludos, nos vemos el miércoles para desbloquear su correo"]
-    prueba_tokens = normalization(prueba)
-    print(test(prueba_tokens[0],p_phishing,p_ham,prior_phishing,prior_ham)) #imprime phishing o ham
+
     
-    y_pred = testSplit(X_test,term_bow)
+    y_pred = testSplit(X_test,term_bow,sm)
     matrix_confusion = confusion_matrix(y_test, y_pred,labels=["ham", "phishing",])
 
     accuracy = getAccuracy(matrix_confusion)

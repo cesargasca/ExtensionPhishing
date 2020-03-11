@@ -19,22 +19,22 @@ function addScript(src) {
     (document.body || document.head || document.documentElement).appendChild(materializeJS);
     script.onload = function(){
 
-	  	var url= chrome.runtime.getURL("stopwords-es.txt");
-		var evt=document.createEvent("CustomEvent");
-		evt.initCustomEvent("yourCustomEvent", true, true, url);//mandamos direccion de stopwords-es.txt
-		document.dispatchEvent(evt);
+        var url= chrome.runtime.getURL("stopwords-es.txt");
+        var evt=document.createEvent("CustomEvent");
+        evt.initCustomEvent("yourCustomEvent", true, true, url);//mandamos direccion de stopwords-es.txt
+        document.dispatchEvent(evt);
 
-		var url_modelo = chrome.runtime.getURL("modelo_entrenado_json.json");
-		var evt2=document.createEvent("CustomEvent");
-		evt2.initCustomEvent("getModelo_url", true, true, url_modelo);//mandamos direccion de modelo_entrenado_json.json
-		document.dispatchEvent(evt2);
+        var url_modelo = chrome.runtime.getURL("modelo_entrenado_json.json");
+        var evt2=document.createEvent("CustomEvent");
+        evt2.initCustomEvent("getModelo_url", true, true, url_modelo);//mandamos direccion de modelo_entrenado_json.json
+        document.dispatchEvent(evt2);
 
-		var evt3=document.createEvent("CustomEvent");
-		evt3.initCustomEvent("close", true, true, url_modelo);//mandamos direccion de modelo_entrenado_json.json
-		document.dispatchEvent(evt3);
+        var evt3=document.createEvent("CustomEvent");
+        evt3.initCustomEvent("close", true, true, url_modelo);//mandamos direccion de modelo_entrenado_json.json
+        document.dispatchEvent(evt3);
 
 
-	};
+    };
 }
 
 
