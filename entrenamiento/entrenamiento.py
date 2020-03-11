@@ -27,15 +27,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 #entrenar modelo
 #guardar en json
 class Modelo_entrenado:
-  def __init__(self, p_phishing, p_ham,prior_phishing,prior_ham,totalOfPhishing,totalOfHam,a_p,a_h,lambdaSmoothing):
+  def __init__(self, p_phishing, p_ham,prior_phishing,prior_ham,totalOfPhishing,totalOfHam,totalOfFeatures,lambdaSmoothing=1):
     self.p_phishing = p_phishing
     self.p_ham = p_ham
     self.prior_phishing = prior_phishing
     self.prior_ham = prior_ham
     self.totalOfPhishing = totalOfPhishing
     self.totalOfHam = totalOfHam
-    self.a_p = a_p
-    self.a_h = a_h
+    self.totalOfFeatures = totalOfFeatures
     self.lambdaSmoothing = lambdaSmoothing
     
 class Smoothing:
@@ -45,7 +44,8 @@ class Smoothing:
         self.lambdaSmoothing = lambdaSmoothing
         self.totalOfPhishing = totalOfPhishing
         self.totalOfHam = totalOfHam
-
+        
+        self.lambdaSmoothing = lambdaSmoothing
 
 
     
@@ -83,7 +83,7 @@ def get_bagOfWords(corpus_tokenized):
     for c in corpus_tokenized:
         '''Cada email divido en tokens lo concatena de nuevo'''
         corpus_tokenized_text.append(' '.join(c))
-    vectorizer = CountVectorizer(max_features=500,min_df=5)
+    vectorizer = CountVectorizer()
     term_document_matrix = vectorizer.fit_transform(corpus_tokenized_text).todense()
     dic = vectorizer.vocabulary_
     sum_words = term_document_matrix.sum(axis=0)
@@ -125,12 +125,16 @@ def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow,smoo
     lambdaSmoothing = 0
     
     if smoothing:
-        A_p,A_h = smoothing_(X_train,y_train,len(term_bow))
+        #A_p,A_h = smoothing_(X_train,y_train,len(term_bow))
         lambdaSmoothing = 1  
-        sm = Smoothing(A_p,A_h,lambdaSmoothing,totalOfPhishing,totalOfHam)
-    prior_phishing = (totalOfPhishing + lambdaSmoothing)/(totalOfEmails + (len(set(y))*lambdaSmoothing))
-    prior_ham = (totalOfHam + lambdaSmoothing) / (totalOfEmails + (len(set(y))*lambdaSmoothing))
+        #sm = Smoothing(A_p,A_h,lambdaSmoothing,totalOfPhishing,totalOfHam)
+    #prior_phishing = (totalOfPhishing + lambdaSmoothing)/(totalOfEmails + (len(set(y))*lambdaSmoothing))
+    #prior_ham = (totalOfHam + lambdaSmoothing) / (totalOfEmails + (len(set(y))*lambdaSmoothing))
+    
+    prior_phishing = totalOfPhishing /(totalOfEmails)
+    prior_ham = totalOfHam + lambdaSmoothing / (totalOfEmails)
     p_phishing,p_ham = fillWithZero(term_bow)
+    
     for i in range(totalOfEmails):
         for j in range(len(term_bow)):
             value = X_train.item(i,j)
@@ -140,11 +144,11 @@ def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow,smoo
                 p_ham[getKeyByValue(term_bow,j)] += value
                 
     for key,value in term_bow.items():
-        p_phishing[key] = (p_phishing[key] + lambdaSmoothing) / (totalOfPhishing + A_p*lambdaSmoothing)
-        p_ham[key] = (p_ham[key] + lambdaSmoothing) / (totalOfHam + A_h*lambdaSmoothing)
+        p_phishing[key] = (p_phishing[key] + lambdaSmoothing) / (totalOfPhishing + len(term_bow)*lambdaSmoothing)
+        p_ham[key] = (p_ham[key] + lambdaSmoothing) / (totalOfHam + len(term_bow)*lambdaSmoothing)
         
 
-    return p_phishing,p_ham,prior_phishing,prior_ham,sm
+    return p_phishing,p_ham,prior_phishing,prior_ham
 
 
             
@@ -160,8 +164,6 @@ def smoothing_(X,y,total_of_terms):
             for j in range(total_of_terms):
                 if X.item(i,j)>0:
                     k_h += 1
-            
-            
     return k_p,k_h
                 
     
@@ -188,7 +190,7 @@ def test(email_tokenized,p_phishing,p_ham,prior_phishing,prior_ham):
     else:
         return "ham"
     
-def testSplit(X_test,term_bow,sm):
+def testSplit(X_test,term_bow,totalOfPhishing,totalOfHam,lambdaSmoothing=0):
     y_pred = []
     for i in range(len(X_test)):
         conditional_probability_phishing = 1
@@ -200,11 +202,11 @@ def testSplit(X_test,term_bow,sm):
                 if p_phishing[palabra] != 0:
                     conditional_probability_phishing *= pow(p_phishing[palabra],X_test.item(i,j))
                 else:
-                    conditional_probability_phishing *= sm.lambdaSmoothing / (sm.totalOfPhishing  + sm.a_p*sm.lambdaSmoothing)
+                    conditional_probability_phishing *= lambdaSmoothing / (totalOfPhishing  + len(term_bow)*lambdaSmoothing)
                 if p_ham[palabra] != 0:
                     conditional_probability_ham *= pow(p_ham[palabra],X_test.item(i,j))
                 else:
-                    conditional_probability_phishing *= sm.lambdaSmoothing / (sm.totalOfHam  + sm.a_h*sm.lambdaSmoothing)
+                    conditional_probability_phishing *= lambdaSmoothing / (totalOfHam  + len(term_bow)*lambdaSmoothing)
             except KeyError:
                 print(palabra)
         result_phishing = prior_phishing*conditional_probability_phishing
@@ -227,12 +229,24 @@ def getKeyByValue(term_bow,value):
      
 
 def normalization(corpus):
+    stopwords = getStopWords("stopwords-es.txt")
+    for st in stopwords:
+        st = st[:-1]
     stemmer = SnowballStemmer('spanish')
     corpus_tokenized = getTokens(corpus)
     stemmed_text = []
+    stemmed_text_cleaned = []
     for c in corpus_tokenized:
         stemmed_text.append([stemmer.stem(i) for i in c])
-    return stemmed_text
+    for s in stemmed_text:
+        aux = []
+        for w in s:
+            if w not in stopwords:
+                aux.append(w)
+            else:
+                print(w)
+        stemmed_text_cleaned.append(aux)
+    return stemmed_text_cleaned
 
 def getAccuracy(matrix_confusion):
     tp = matrix_confusion[0][0]
@@ -255,9 +269,9 @@ if __name__ == '__main__':
     
     X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.25) #divide en conjunto de entrenamiento y de prueba
     
-    p_phishing,p_ham,prior_phishing,prior_ham,sm = train(X_train,y_train,len(y_train),y_train.count("phishing"),y_train.count("ham"),term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
+    p_phishing,p_ham,prior_phishing,prior_ham = train(X_train,y_train,len(y_train),y_train.count("phishing"),y_train.count("ham"),term_bow) #modelo entrenado, diccionario de P(X=""|Y=phishing), diccionario de P(X=""|y=ham), p(y=phishing),p(y=ham)
     
-    modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham,y_train.count("phishing"),y_train.count("ham"),sm.a_p,sm.a_h,sm.lambdaSmoothing)
+    modelo_entrenado = Modelo_entrenado(p_phishing,p_ham,prior_phishing,prior_ham,y_train.count("phishing"),y_train.count("ham"),len(term_bow))
     modelo_entrenado_json = json.dumps(modelo_entrenado.__dict__)
     file_json=open("modelo_entrenado_json.json",'w')
     file_json.write(modelo_entrenado_json)
@@ -268,7 +282,7 @@ if __name__ == '__main__':
     #crear matriz de confusion
 
     
-    y_pred = testSplit(X_test,term_bow,sm)
+    y_pred = testSplit(X_test,term_bow,y_train.count("phishing"),y_train.count("ham"),lambdaSmoothing=1)
     matrix_confusion = confusion_matrix(y_test, y_pred,labels=["ham", "phishing",])
 
     accuracy = getAccuracy(matrix_confusion)

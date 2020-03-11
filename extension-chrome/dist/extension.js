@@ -18349,22 +18349,22 @@ function test(tokens){
     for(var i = 0; i < tokens.length ; i++){
         var probability = modelo_entrenado.p_phishing[tokens[i]]
         var probability_h = modelo_entrenado.p_ham[tokens[i]]
-        if(probability != null && parseFloat(probability) > 0){
+        if(probability != null){
             console.log("phishing",tokens[i],probability);
             conditional_probability_phishing *= probability;
         }
         else{
-            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfPhishing + modelo_entrenado.a_p*modelo_entrenado.lambdaSmoothing);
+            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfPhishing + modelo_entrenado.totalOfFeatures*modelo_entrenado.lambdaSmoothing);
             console.log("NO ESTA EN PHISHING",tokens[i],x);
             conditional_probability_phishing *= x;
         }
-        if(probability_h != null && parseFloat(probability_h) > 0){
+        if(probability_h != null){
             conditional_probability_ham *= probability_h;
             console.log("ham",tokens[i],probability_h)
         }
         else{
             
-            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfHam + modelo_entrenado.a_h*modelo_entrenado.lambdaSmoothing);
+            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfHam + modelo_entrenado.totalOfFeatures*modelo_entrenado.lambdaSmoothing);
             console.log("NO ESTA EN HAM",tokens[i],x);
             conditional_probability_ham*= x;
         }
@@ -18372,8 +18372,11 @@ function test(tokens){
     
     var result_phishing = p_p*conditional_probability_phishing
     var result_ham = p_h*conditional_probability_ham
+    console.log("conditional_probability_phishing",conditional_probability_phishing)
+    console.log("conditional_probability_ham",conditional_probability_ham)
     console.log("R phishing ",result_phishing)
     console.log("R ham ", result_ham)
+    console.log("suma: " ,result_phishing + result_ham)
 
     if(result_phishing > result_ham)
         return "phishing";
