@@ -132,7 +132,7 @@ def train(X_train,y_train,totalOfEmails,totalOfPhishing,totalOfHam,term_bow,smoo
     #prior_ham = (totalOfHam + lambdaSmoothing) / (totalOfEmails + (len(set(y))*lambdaSmoothing))
     
     prior_phishing = totalOfPhishing /(totalOfEmails)
-    prior_ham = totalOfHam + lambdaSmoothing / (totalOfEmails)
+    prior_ham = totalOfHam  / (totalOfEmails)
     p_phishing,p_ham = fillWithZero(term_bow)
     
     for i in range(totalOfEmails):
@@ -191,31 +191,59 @@ def test(email_tokenized,p_phishing,p_ham,prior_phishing,prior_ham):
         return "ham"
     
 def testSplit(X_test,term_bow,totalOfPhishing,totalOfHam,lambdaSmoothing=0):
+    import math
     y_pred = []
+    totalOfEmails = totalOfPhishing + totalOfHam
+    prior_phishing = totalOfPhishing /(totalOfEmails)
+    prior_ham = totalOfHam / (totalOfEmails)
+    
     for i in range(len(X_test)):
-        conditional_probability_phishing = 1
-        conditional_probability_ham = 1
+        conditional_probability_phishing = 0
+        conditional_probability_ham = 0
+        cpp = 1
+        cph = 1
         for j in range(len(term_bow)):
             palabra = getKeyByValue(term_bow,j)
             #print(palabra)
             try:
                 if p_phishing[palabra] != 0:
-                    conditional_probability_phishing *= pow(p_phishing[palabra],X_test.item(i,j))
+                    conditional_probability_phishing += math.log(p_phishing[palabra])*X_test.item(i,j)
+                    cpp *= pow(p_phishing[palabra],X_test.item(i,j))
                 else:
-                    conditional_probability_phishing *= lambdaSmoothing / (totalOfPhishing  + len(term_bow)*lambdaSmoothing)
+                    conditional_probability_phishing += math.log(lambdaSmoothing / (totalOfPhishing  + len(term_bow)*lambdaSmoothing))
+                    cpp *= lambdaSmoothing / (totalOfPhishing  + len(term_bow)*lambdaSmoothing)
                 if p_ham[palabra] != 0:
-                    conditional_probability_ham *= pow(p_ham[palabra],X_test.item(i,j))
+                    conditional_probability_ham += math.log(p_ham[palabra])*X_test.item(i,j)
+                    cph *= pow(p_ham[palabra],X_test.item(i,j))
                 else:
-                    conditional_probability_phishing *= lambdaSmoothing / (totalOfHam  + len(term_bow)*lambdaSmoothing)
+                    conditional_probability_phishing += math.log(lambdaSmoothing / (totalOfHam  + len(term_bow)*lambdaSmoothing))
+                    cph *= lambdaSmoothing / (totalOfHam  + len(term_bow)*lambdaSmoothing)
             except KeyError:
                 print(palabra)
-        result_phishing = prior_phishing*conditional_probability_phishing
-        result_ham = prior_ham*conditional_probability_ham
+        result_phishing = math.log(prior_phishing) + conditional_probability_phishing
+        result_ham = math.log(prior_ham) + conditional_probability_ham
+        
+        rp = prior_phishing*cpp
+        rh = prior_ham*cph
+        
+        try:
+            trp = rp/(rp+rh)
+            trh = rh/(rp+rh)
+        except ZeroDivisionError:
+            print("rp",rp,"rh",rh)
+            print("cpp",cpp,"cph",cph)
+            print("")
+            print("rp_log",result_phishing,"rh_log",result_ham)
+            print("cpp_log",conditional_probability_phishing,"cph_log",conditional_probability_ham)
+        
+#        print("result phishing", trp,"result ham",trh)
+#        print("suma",trp+trh)
         if result_phishing > result_ham:
             y_pred.append("phishing")
         else:
             y_pred.append("ham")
-    return y_pred
+    return y_pred 
+
             
     
 
