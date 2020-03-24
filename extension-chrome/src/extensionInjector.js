@@ -2,21 +2,21 @@
 
 function addScript(src) {
     const script = document.createElement("script");
-    const materializeJS = document.createElement("script");
+    // const materializeJS = document.createElement("script");
     const materialize = document.createElement("link");
     const icons = document.createElement("link");
     materialize.rel="stylesheet";
-    materialize.href = "https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css";
+    materialize.href = chrome.extension.getURL("src/css/materialize.min.css");
     icons.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
     icons.rel = "stylesheet";
-    materializeJS.type = "text/javascript";
-    materializeJS.src = "https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js";
+    // materializeJS.type = "text/javascript";
+    // materializeJS.src = "https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js";
     script.type = "text/javascript";
     script.src = chrome.extension.getURL(src);
     (document.body || document.head || document.documentElement).appendChild(script);
     (document.body || document.head || document.documentElement).appendChild(materialize);
     (document.body || document.head || document.documentElement).appendChild(icons);
-    (document.body || document.head || document.documentElement).appendChild(materializeJS);
+    // (document.body || document.head || document.documentElement).appendChild(materializeJS);
     script.onload = function(){
 
         var url= chrome.runtime.getURL("stopwords-es.txt");
@@ -40,6 +40,7 @@ function addScript(src) {
 
 
 addScript("dist/extension.js");
+
 
 
 

@@ -49,7 +49,40 @@ class Smoothing:
 
 
     
-        
+def plotLC(X,y):    
+    from sklearn.naive_bayes import MultinomialNB
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.model_selection import learning_curve
+    import matplotlib.pyplot as plt
+    from sklearn.model_selection import ShuffleSplit
+    title = "Learning Curves (Naive Bayes)"
+    # Cross validation with 100 iterations to get smoother mean test and train
+    # score curves, each time with 20% data randomly selected as a validation set.
+    cv = ShuffleSplit(n_splits=100, test_size=0.2, random_state=0)
+    estimator = MultinomialNB()
+    train_sizes, train_scores, test_scores = \
+        learning_curve(estimator, X, y, cv=cv,train_sizes=np.linspace(.1, 1.0, 5))
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+    plt.style.use('seaborn')
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                         train_scores_mean + train_scores_std, alpha=0.1,
+                         color="r")
+    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                         test_scores_mean + test_scores_std, alpha=0.1,
+                         color="g")
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+                 label="Training score")
+    plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+                 label="Cross-validation score")
+    plt.ylabel('Score', fontsize = 14)
+    plt.xlabel('Training set size', fontsize = 14)
+    plt.title('Learning curves for a Naive Bayes model', fontsize = 18, y = 1.03)
+    plt.legend()
+    plt.ylim(0,1)
+    plt.show()
 
   
 def getTokens(corpus):
@@ -220,11 +253,11 @@ def testSplit(X_test,term_bow,totalOfPhishing,totalOfHam,lambdaSmoothing=0):
                     cph *= lambdaSmoothing / (totalOfHam  + len(term_bow)*lambdaSmoothing)
             except KeyError:
                 print(palabra)
-        result_phishing = math.log(prior_phishing) + conditional_probability_phishing
-        result_ham = math.log(prior_ham) + conditional_probability_ham
+        result_phishing = math.log(prior_phishing) + conditional_probability_phishing #sumas log naive bayes
+        result_ham = math.log(prior_ham) + conditional_probability_ham #sumas log naive bayes
         
-        rp = prior_phishing*cpp
-        rh = prior_ham*cph
+        rp = prior_phishing*cpp #naive bayes
+        rh = prior_ham*cph #naive bayes
         
         try:
             trp = rp/(rp+rh)
@@ -314,7 +347,7 @@ if __name__ == '__main__':
     matrix_confusion = confusion_matrix(y_test, y_pred,labels=["ham", "phishing",])
 
     accuracy = getAccuracy(matrix_confusion)
-    
+    p = plotLC(X,y)
 
 #
 #print(term_document_matrix.item(1,11))

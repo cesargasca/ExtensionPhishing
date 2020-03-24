@@ -19,6 +19,7 @@
 
     "web_accessible_resources": [
         "dist/extension.js",
+        "src/css/materialize.min.css",
         "stopwords-es.txt",
         "modelo_entrenado_json.json"
     ],

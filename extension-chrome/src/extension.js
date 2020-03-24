@@ -210,6 +210,53 @@ function test(tokens){
         return "ham";
 }
 
+function testLog(tokens){
+  var p_p = modelo_entrenado.prior_phishing;
+  var p_h = modelo_entrenado.prior_ham;
+  //console.log(p_p);
+  //console.log(p_h);
+
+  var conditional_probability_phishing = 0;
+    var conditional_probability_ham = 0;
+
+  for(var i = 0; i < tokens.length ; i++){
+    var probability = modelo_entrenado.p_phishing[tokens[i]]
+    var probability_h = modelo_entrenado.p_ham[tokens[i]]
+    if(probability != null){
+      console.log("phishing",tokens[i],probability);
+      conditional_probability_phishing += Math.log(probability);
+    }
+        else{
+            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfPhishing + modelo_entrenado.totalOfFeatures*modelo_entrenado.lambdaSmoothing);
+            console.log("NO ESTA EN PHISHING",tokens[i],x);
+            conditional_probability_phishing += Math.log(x);
+        }
+    if(probability_h != null){
+      conditional_probability_ham += Math.log(probability_h);
+      console.log("ham",tokens[i],probability_h)
+    }
+        else{
+            
+            var x = (modelo_entrenado.lambdaSmoothing) / (modelo_entrenado.totalOfHam + modelo_entrenado.totalOfFeatures*modelo_entrenado.lambdaSmoothing);
+            console.log("NO ESTA EN HAM",tokens[i],x);
+            conditional_probability_ham += Math.log(x);
+        }
+  }
+  
+    var result_phishing = Math.log(p_p) + conditional_probability_phishing
+    var result_ham = Math.log(p_h) + conditional_probability_ham
+    console.log("conditional_probability_phishing",conditional_probability_phishing)
+    console.log("conditional_probability_ham",conditional_probability_ham)
+    console.log("R phishing ",result_phishing)
+    console.log("R ham ", result_ham)
+    console.log("suma: " ,result_phishing + result_ham)
+
+    if(result_phishing > result_ham)
+        return "phishing";
+    else
+        return "ham";
+}
+
 
 gmail.observe.on("load", () => {
     const userEmail = gmail.get.user_email();
@@ -236,7 +283,7 @@ gmail.observe.on("load", () => {
             console.log(cleaned_tokens);
             var set = new Set(cleaned_tokens);
             console.log(Array.from(set));
-            if(test(Array.from(set))=="phishing"){
+            if(testLog(Array.from(set))=="phishing"){
 
                 email_dom.body(danger + body);
                 document.getElementById("close_row").addEventListener("click", function cierra() {
